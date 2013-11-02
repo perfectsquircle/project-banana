@@ -19,24 +19,62 @@
 			window.removeEventListener(name);
 		}
 	}
+	
+	var List = function(arr) {
+		Object.defineProperty(this, "length", {
+			configurable: false,
+			enumerable: false,
+			set: function(val) {
+				this.emit("lengthChanged");
+				arr.length = val;
+			},
+			get: function() {
+				return arr.length;
+			}
+		});
+		smash(arr, this);
+		return this;
+	}
+	
+	List.prototype = {
+		__proto__: EventEmitter,	
+		toJSON: function() {
+			var x = [];
+			Object.keys(this).forEach(function(key){
+				x.push(this[key]);
+			}, this);
+			return x;
+		}
+	}
 
 	var Model = Banana.Model = function(obj) {
+		smash(obj, this);
+		return this;
+	};
+	
+	function smash(obj, parent) {
 		Object.keys(obj).forEach(function(key) {
+			var val = obj[key];
+			if (Array.isArray(val)) {
+				val = new List(val);
+			} else if (typeof val === "object") {
+				return smash(val, this);
+			} 
+			
 			Object.defineProperty(this, key, {
 				configurable: false,
 				enumerable: true,
 				get: function() {
-					return obj[key];
+					return val;
 				},
-				set: function(val) {
-					console.debug("Setting " + key + " to " + val);
-					this.emit("change", key, val);
-					obj[key] = val;
+				set: function(newVal) {
+					console.debug("Setting " + key + " to " + newVal);
+					this.emit("change", key, newVal);
+					val = newVal;
 				}
 			});
-		}, this);
-		return this;
-	};
+		}, parent);
+	}
 	
 	Model.prototype.__proto__ = EventEmitter;
 

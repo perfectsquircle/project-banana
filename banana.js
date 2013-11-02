@@ -1,64 +1,55 @@
-(function() {
-	var Banana = this.Banana = {};
+(function(window) {
+	var Banana = {};
 
-	var EventEmitter = Banana.EventEmitter = function(obj) {
- 		this.__proto__ = EventEmitter.prototype;
-		this._node = document.createComment("My only purpose in life is to alert others.");
-		return this;
-	};
-
-	EventEmitter.prototype.emit = EventEmitter.prototype.trigger = function(name) {
-		var e = new CustomEvent(name, { detail: Array.prototype.slice.call(arguments, 1) });
-		this._node.dispatchEvent(e);
-	};
-
-	EventEmitter.prototype.on = function(name, cb, context) {
-		this._node.addEventListener(name, function(event) {
-			cb.apply(context || this, event.detail);
-		});
-	};
-
-	EventEmitter.prototype.off = function(name) {
-		this._node.removeEventListener(name);
-	};
+	var EventEmitter = Banana.EventEmitter = {
+		extend: function(obj) {
+			obj.prototype.__proto__ = this;
+		},
+		emit: function(name) {
+			var e = new CustomEvent(name, { detail: Array.prototype.slice.call(arguments, 1) });
+			window.dispatchEvent(e);
+		},
+		trigger: this.emit,
+		on: function(name, cb, context) {
+			window.addEventListener(name, function(event) {
+				cb.apply(context || this, event.detail);
+			});
+		},
+		off: function(name) {
+			window.removeEventListener(name);
+		}
+	}
 
 	var Model = Banana.Model = function(obj) {
-		for (var key in obj) {
+		Object.keys(obj).forEach(function(key) {
 			Object.defineProperty(this, key, {
 				configurable: false,
 				enumerable: true,
-				// writable: true,
 				get: function() {
 					return obj[key];
 				},
 				set: function(val) {
+					console.debug("Setting " + key + " to " + val);
 					this.emit("change", key, val);
 					obj[key] = val;
 				}
 			});
-		}
-		EventEmitter.call(this, this);
+		}, this);
 		return this;
 	};
+	
+	Model.prototype.__proto__ = EventEmitter;
 
 	/*Model.extend = function(proto) {
 		var x = function() {
 			return proto.constructor.apply(this, arguments);
 		}
 		proto.__proto__ = Model.prototype;
-		x.__proto__ = proto;
+		x.prototype.__proto__ = proto;
 		return x;
+	};
 
-		var x = Object.create(Model.prototype, proto);
-		if (!x.hasOwnProperty("constructor")) {
-			x.constructor = function() {
-				return Model.apply(this, arguments);
-			};
-		} 
-		return x.constructor;
-	};*/
-
-	/*var View = Banana.View = function(options) {
+	var View = Banana.View = function(options) {
 		var el = options.el;
 		if (el) {
 			var events = options.events;
@@ -73,7 +64,7 @@
 		return obj;
 	};*/
 
-	return Banana;
-}).call(this);
+	window.Banana = Banana;
+})(window);
 
 

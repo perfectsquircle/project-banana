@@ -1,7 +1,7 @@
 console.debug(Banana);
 
 var x = new Banana.Model({
-	foo: 1234,
+	foo: 0x123,
 	bar: ["a", "b", "c"]
 });
 console.debug(x);
@@ -11,4 +11,6 @@ x.on("change", function(key, val) {
 	console.debug(key, val);
 });
 
-x.foo = "monkey";
+x.foo = 0xdeadbeef;
+
+

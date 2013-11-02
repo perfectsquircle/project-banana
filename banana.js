@@ -1,5 +1,11 @@
 (function(window) {
 	var Banana = {};
+	
+	extend = function(a, b) {
+		Object.getOwnPropertyNames(b).forEach(function(name) {
+			a[name] = b[name];
+		});
+	}
 
 	var EventEmitter = Banana.EventEmitter = {
 		extend: function(obj) {
@@ -20,24 +26,27 @@
 		}
 	}
 	
-	var List = function(arr) {
+	/*var List = function(arr) {	
+		//extend(this, Array.prototype);
+		extend(this, EventEmitter);
 		Object.defineProperty(this, "length", {
 			configurable: false,
 			enumerable: false,
 			set: function(val) {
 				this.emit("lengthChanged");
-				arr.length = val;
+				this._length = val;
 			},
 			get: function() {
-				return arr.length;
+				return this._length
 			}
 		});
+		this._length = arr.length
 		smash(arr, this);
 		return this;
-	}
+	};
 	
-	List.prototype = {
-		__proto__: EventEmitter,	
+	List.prototype = {	
+		__proto__: Array.prototype,
 		toJSON: function() {
 			var x = [];
 			Object.keys(this).forEach(function(key){
@@ -45,6 +54,26 @@
 			}, this);
 			return x;
 		}
+	}*/
+	
+	function list(arr) {
+		var list = Object.create(Array.prototype);
+		extend(list, EventEmitter);
+		
+		var _length = arr.length;
+		Object.defineProperty(list, "length", {
+			configurable: false,
+			enumerable: false,
+			set: function(val) {
+				this.emit("change", this, val);
+				_length = val;
+			},
+			get: function() {
+				return _length;
+			}
+		});
+		smash(arr, list);
+		return list;
 	}
 
 	var Model = Banana.Model = function(obj) {
@@ -56,13 +85,14 @@
 		Object.keys(obj).forEach(function(key) {
 			var val = obj[key];
 			if (Array.isArray(val)) {
-				val = new List(val);
+				//val = new List(val);
+				val = list(val);
 			} else if (typeof val === "object") {
 				return smash(val, this);
 			} 
 			
 			Object.defineProperty(this, key, {
-				configurable: false,
+				configurable: true,
 				enumerable: true,
 				get: function() {
 					return val;

@@ -1,4 +1,4 @@
-(function() {
+window.onload = function() {
     console.debug(Banana);
 
     var bar =  ["a", "b", "c"];
@@ -28,4 +28,16 @@
     console.debug(scooby);
     console.debug(scooby.snacks);
     console.debug(scooby.getSnacksPretty());
-})();
+
+    var MonkeyView = Banana.View.extend({
+        events: {
+            "click": "handleClick"
+        },
+
+        handleClick: function(event) {
+            console.debug(event);
+        }
+    });
+
+    var monkeyView = new MonkeyView({ el: document.getElementById("monkey") });
+};

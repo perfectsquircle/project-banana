@@ -110,18 +110,22 @@
     };
 
     var View = Banana.View = function (options) {
-        var el = options.el;
+        var el = this.el = options.el;
         if (el) {
-            var events = options.events;
+            var events = this.events;
             for (var x in events) {
                 el.addEventListener(x, this[events[x]]);
             }
         }
     };
 
-    View.extend = function (obj) {
-        obj.__proto__ = View.prototype;
-        return obj;
+    View.extend = function (proto) {
+        var x = function () {
+            return proto.constructor.apply(this, arguments);
+        };
+        proto.__proto__ = View.prototype;
+        x.prototype.__proto__ = proto;
+        return x;
     };
 
     window.Banana = Banana;

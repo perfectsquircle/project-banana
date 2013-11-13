@@ -1,16 +1,11 @@
 (function () {
-    var Banana = {};
-
     function extend(a, b) {
         Object.getOwnPropertyNames(b).forEach(function (name) {
             a[name] = b[name];
         });
     }
 
-    var EventEmitter = Banana.EventEmitter = {
-        extend: function (obj) {
-            obj.prototype.__proto__ = this;
-        },
+    var EventEmitter = {
         emit: function (name) {
             var e = new CustomEvent(name, { detail: Array.prototype.slice.call(arguments, 1) });
             window.dispatchEvent(e);
@@ -26,20 +21,12 @@
         }
     };
 
-    var List = Banana.List = function (arr) {
+    var List = function (arr) {
         this._arr = arr || [];
-        Object.defineProperty(this, "length", {
-            configurable: false,
-            enumerable: false,
-            get: function () {
-                return this._arr.length;
-            }
-        });
         return this;
     };
 
     List.prototype = {
-        __proto__: EventEmitter,
         toJSON: function () {
             var x = [];
             this.forEach(function (item) {
@@ -53,23 +40,28 @@
         set: function (index, value) {
             this.emit("change", index, value);
             this._arr[index] = value;
+        },
+        length: function () {
+            return this._arr.length;
         }
     };
 
-    [ "forEach", "map", "reduce", "reduceRight"].forEach(function (fn) {
+    extend(List.prototype, EventEmitter);
+
+    [ "forEach", "map", "reduce", "reduceRight", "concat", "join", "slice", "every", "some", "filter"].forEach(function (fn) {
         List.prototype[fn] = function () {
             return Array.prototype[fn].apply(this._arr, arguments);
         };
     });
 
-    [ "push", "pop", "shift", "unshift" ].forEach(function (fn) {
+    [ "push", "pop", "shift", "unshift", "reverse", "sort", "splice" ].forEach(function (fn) {
         List.prototype[fn] = function () {
             this.emit("change", fn);
             return Array.prototype[fn].apply(this._arr, arguments);
         };
     });
 
-    var Model = Banana.Model = function (obj) {
+    var Model = function (obj) {
         smash(obj, this);
         return this;
     };
@@ -90,7 +82,6 @@
                     return val;
                 },
                 set: function (newVal) {
-                    console.debug("Setting " + key + " to " + newVal);
                     this.emit("change", key, newVal);
                     val = newVal;
                 }
@@ -98,18 +89,18 @@
         }, parent);
     }
 
-    Model.prototype.__proto__ = EventEmitter;
+    extend(Model.prototype, EventEmitter);
 
     Model.extend = function (proto) {
         var x = function () {
-            return proto.constructor.apply(this, arguments);
+            return Model.apply(this, arguments)
         };
-        proto.__proto__ = Model.prototype;
-        x.prototype.__proto__ = proto;
+        x.prototype = Object.create(Model.prototype);
+        extend(x.prototype, proto);
         return x;
     };
 
-    var View = Banana.View = function (options) {
+    var View = function (options) {
         var el = this.el = options.el;
         if (el) {
             var events = this.events;
@@ -121,14 +112,19 @@
 
     View.extend = function (proto) {
         var x = function () {
-            return proto.constructor.apply(this, arguments);
+            return View.apply(this, arguments);
         };
-        proto.__proto__ = View.prototype;
-        x.prototype.__proto__ = proto;
+        x.prototype = Object.create(View.prototype);
+        extend(x.prototype, proto);
         return x;
     };
 
-    window.Banana = Banana;
+    window.Banana = {
+        EventEmitter: EventEmitter,
+        List: List,
+        Model: Model,
+        View: View
+    };
 })();
 
 
